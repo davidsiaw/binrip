@@ -1,197 +1,126 @@
 # frozen_string_literal: true
 
-# Main module
 module Binrip
-  class Device
-    def index(something)
-    end
-  end
+end
 
-  class SetInstruction
-    def initialize(machine, params)
-      @machine = machine
-      @params = params
-    end
+RSpec.describe Binrip::Destructurizer do
+  it 'destructures a hash' do
+    format_desc = <<~YAML
+      formats:
+        smpl:
+          fields:
+          - name: anum
+            type: int8
+          - name: bnum
+            type: int8
+    YAML
 
-    def run!
-      @machine.registers[dst_register_name] = src_value
-    end
+    hash = {
+      'anum' => 110,
+      'bnum' => 220
+    }
 
-    def src_value
-      return @params[1] if @params[1].is_a? Integer
-
-      @machine.registers[src_register_name]
-    end
-
-    def src_register_name
-      name_of @params[1]
-    end
-
-    def dst_register_name
-      name_of @params[0]
-    end
-
-    def name_of(thing)
-      thing.to_s.sub(/^reg_/, '').to_sym
-    end
-  end
-
-  # interpreter
-  class Interpreter
-    attr_reader :error, :memory, :device, :rom, :registers
-
-    # a, b, c, d, e, f, g, h -> general purpose registers
-    # pc -> register with address of next operation
-    # mr -> register with address of memory being used
-    # err -> error register
-    # mem -> setting this register outputs to memory
-    #        reading this register inputs from memory
-    # dev -> setting this register outputs to device
-    #        reading this register inputs from device
-    REGISTER_NAMES = %i[a b c d e f g h pc mr err mem dev].freeze
-
-    def initialize(rom, device)
-      @rom = rom
-      @memory = {}
-      @stack = []
-      @halted = false
-      @device = device
-      @registers = REGISTER_NAMES.map { |x| [x, 0] }.to_h
-    end
-
-    def step!
-      return if halted? # no need to run if halted
-
-      execute!
-
-    rescue => e
-      @error = e
-      set_register(:err, 1)
-
-    ensure
-      increment(:pc)
-      @halted = true if register_value(:pc) >= @rom.length
-    end
-
-    def execute!
-      instruction = @rom[register_value(:pc)]
-      params = instruction.values[0]
-
-      case instruction.keys[0]
-      when 'set'
-        SetInstruction.new(self, params).run!
-      end
-    end
-
-    def register_value(register)
-      @registers[register]
-    end
-
-    def set_register(register, value)
-      @registers[register] = value
-    end
-
-    def increment(register)
-      @registers[register] += 1
-    end
-
-    def halted?
-      @halted
-    end
-  end
-
-  # linker
-  class Linker
-    def initialize(asm)
-      @asm = asm
-      p @asm
-    end
-
-    def positions
-      pos = {}
-      count = 0
-      @asm.each do |fname, fdef|
-        pos[fname] = count
-        count += fdef.length + 1
-      end
-      pos
-    end
-
-    def output
-      result = []
-      @asm.each do |fname, fdef|
-        fdef.each do |instr|
-          params = instr.values[0]
-          if instr.keys[0] == 'call'
-            result << { 'call' => [ positions[params[0]] ] }
-          else
-            result << instr
-          end
-        end
-        result << { 'return' => [] }
-      end
-      result
-    end
-  end
-
-  # compiler
-  class Compiler
-    def initialize(desc)
-      @desc = desc
-    end
-
-    def functions
-      result = {}
-      @desc['formats'].each do |name, info|
-        result["alloc_#{name}"] = [
-          { 'alloc' => [name, 'reg_a'] }
-        ]
-
-        init_instrs = []
-        read_instrs = []
-        write_instrs = []
-
-        info['fields'].each do |field_info|
-          read_func = "read_#{name}_#{field_info['name']}"
-          write_func = "write_#{name}_#{field_info['name']}"
-
-          result[read_func] = [            
-            { 'index' => ['reg_a', 'simple.number', 1] },
-            { 'read_bytes' => [1, 'reg_dev'] }
-          ]
-
-          result[write_func] = [            
-            { 'index' => ['reg_a', 'simple.number', 1] },
-            { 'write_bytes' => [1, 'reg_dev'] }
-          ]
-
-          init_instrs += [
-            { 'index' => ['reg_a', 'simple.number', 1] },
-            { 'set' => ['reg_dev', 0] }
-          ]
-
-          read_instrs << { 'call' => [read_func] }
-          write_instrs << { 'call' => [write_func] }
-        end
-
-        result["init_#{name}"] = init_instrs
-        result["read_#{name}"] = read_instrs
-        result["write_#{name}"] = write_instrs
-      end
-      result
-    end
-
-    def output
+    str = Binrip::Destructurizer.new(format_desc, 'smpl', hash)
+    expect(str.structs).to eq([
       {
-        'functions' => functions
+        type: 'smpl',
+        fields: {
+          'anum' => { vals: [110] },
+          'bnum' => { vals: [220] }
+        }
       }
-    end
+    ])
   end
 end
 
 RSpec.describe Binrip do
   it 'has a version number' do
     expect(Binrip::VERSION).not_to be nil
+  end
+
+  # struct Something {
+  #   int number;
+  #   int count;
+  #   int some_numbers[count];
+  # }
+
+  it 'reads a struct' do
+    format_desc = <<~YAML
+      formats:
+        simple:
+          fields:
+          - name: number
+            type: int8
+          - name: another_number
+            type: int8
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.read('simple', [100, 200])).to eq(
+      'number' => 100,
+      'another_number' => 200
+    )
+  end
+
+  it 'writes a struct' do
+    format_desc = <<~YAML
+      formats:
+        simple:
+          fields:
+          - name: number
+            type: int8
+          - name: another_number
+            type: int8
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.write('simple',
+                        'number' => 111,
+                        'another_number' => 222)).to eq [111, 222]
+  end
+
+  it 'test reading a struct' do
+    format_desc = <<~YAML
+      formats:
+        simple:
+          fields:
+          - name: number
+            type: int8
+          - name: another_number
+            type: int8
+    YAML
+
+    fmt = YAML.load(format_desc)
+    brc = Binrip::Compiler.new(fmt)
+
+    lnk = Binrip::Linker.new({
+      'main' => [
+        { 'call' => ['alloc_simple'] },
+        { 'call' => ['init_simple'] },
+        { 'call' => ['read_simple'] }
+
+      ]}.merge(brc.output['functions']))
+
+    dev = Binrip::Device.new
+    dev.bytes = [100, 200]
+
+    int = Binrip::Interpreter.new(lnk.output, dev)
+    int.run!
+
+    expect(int.error).to be_nil
+
+    expect(dev.structs[0]).to eq({
+      type: 'simple',
+      fields: {
+        'number' => { vals: [100] },
+        'another_number' => { vals: [200] }
+      }
+    })
+
+    str = Binrip::Structurizer.new(dev.structs, 0, format_desc)
+    expect(str.structure).to eq('number' => 100, 'another_number' => 200)
   end
 end
 
@@ -202,31 +131,31 @@ RSpec.describe Binrip::Compiler do
       formats:
         simple:
           fields:
-          - name: count
+          - name: number
             type: int8
     YAML
     compiler = Binrip::Compiler.new(YAML.load(yaml))
     expect(compiler.output).to eq YAML.load(<<~YAML)
       functions:
         alloc_simple:
-        - alloc: [simple, reg_a]
+        - alloc: [reg_a, simple]
 
         init_simple:
-        - index: [reg_a, simple.number, 1]
+        - index: [simple.number, reg_a, 0]
         - set: [reg_dev, 0]
 
         read_simple:
-        - call: [read_simple_count]
+        - call: [read_simple_number]
 
-        read_simple_count:
-        - index: [reg_a, simple.number, 1]
-        - read_bytes: [1, reg_dev]
+        read_simple_number:
+        - index: [simple.number, reg_a, 0]
+        - read_bytes: [reg_dev, 1]
 
         write_simple:
-        - call: [write_simple_count]
+        - call: [write_simple_number]
         
-        write_simple_count:
-        - index: [reg_a, simple.number, 1]
+        write_simple_number:
+        - index: [simple.number, reg_a, 0]
         - write_bytes: [1, reg_dev]
     YAML
   end
@@ -279,5 +208,230 @@ RSpec.describe Binrip::Interpreter do
     expect(machine.register_value(:a)).to eq 2
     expect(machine.register_value(:b)).to eq 3
     expect(machine.register_value(:c)).to eq 4
+  end
+
+  it 'interprets a bunch of jumps' do
+    instructions = YAML.load(<<~YAML)
+      - set: [reg_a, 2]  # 0 main
+      - call: [4]        # 1 call a_function
+      - inc: [reg_a, 3]  # 2
+      - return: []       # 3
+      - inc: [reg_a, 1]  # 4 a_function
+      - return: []       # 5 ret
+    YAML
+
+    d = Binrip::Device.new
+
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    loop do
+      machine.step!
+      break if machine.halted?
+    end
+
+    expect(machine.error).to be_nil
+    expect(machine.register_value(:a)).to eq 6
+  end
+
+  it 'interprets memory set' do
+    instructions = YAML.load(<<~YAML)
+      - set: [reg_mr, 1]
+      - set: [reg_mem, 10]
+    YAML
+
+    d = Binrip::Device.new
+
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    loop do
+      machine.step!
+      break if machine.halted?
+    end
+
+    expect(machine.error).to be_nil
+    expect(machine.memory[1]).to eq 10
+  end
+
+  it 'interprets memory get' do
+    instructions = YAML.load(<<~YAML)
+      - set: [reg_mr, 2]
+      - set: [reg_b, reg_mem]
+    YAML
+
+    d = Binrip::Device.new
+
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    machine.memory[2] = 12
+
+    loop do
+      machine.step!
+      break if machine.halted?
+    end
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:b]).to eq 12
+  end
+
+  it 'interprets device int8 read' do
+    instructions = YAML.load(<<~YAML)
+      - read_bytes: [reg_b, 1]
+    YAML
+
+    d = Binrip::Device.new
+    d.bytes = [22]
+
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    loop do
+      machine.step!
+      break if machine.halted?
+    end
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:b]).to eq 22
+  end
+
+  it 'interprets device int16 read' do
+    instructions = YAML.load(<<~YAML)
+      - read_bytes: [reg_b, 2]
+    YAML
+
+    d = Binrip::Device.new
+    d.bytes = [1, 1]
+
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    loop do
+      machine.step!
+      break if machine.halted?
+    end
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:b]).to eq 257
+  end
+
+  it 'interprets device int8 write' do
+    instructions = YAML.load(<<~YAML)
+      - set: [reg_b, 5]
+      - write_bytes: [1, reg_b]
+    YAML
+
+    d = Binrip::Device.new
+
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    loop do
+      machine.step!
+      break if machine.halted?
+    end
+
+    expect(machine.error).to be_nil
+    expect(d.bytes).to eq [5]
+  end
+
+  it 'interprets device int16 write' do
+    instructions = YAML.load(<<~YAML)
+      - set: [reg_b, 258]
+      - write_bytes: [2, reg_b]
+    YAML
+
+    d = Binrip::Device.new
+
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    loop do
+      machine.step!
+      break if machine.halted?
+    end
+
+    expect(machine.error).to be_nil
+    expect(d.bytes).to eq [2, 1]
+  end
+
+  it 'interprets device alloc' do
+    instructions = YAML.load(<<~YAML)
+      - alloc: [reg_a, woof]
+      - alloc: [reg_a, meow]
+    YAML
+
+    d = Binrip::Device.new
+
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    loop do
+      machine.step!
+      break if machine.halted?
+    end
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:a]).to eq 1
+    expect(d.structs[0]).to eq({type: 'woof', fields: {}})
+    expect(d.structs[1]).to eq({type: 'meow', fields: {}})
+  end
+
+  it 'interprets device read' do
+    instructions = YAML.load(<<~YAML)
+      - set: [reg_a, 2]
+      - index: [simple.number, reg_a, 0]
+      - set: [reg_b, reg_dev]
+    YAML
+
+    d = Binrip::Device.new
+    d.structs[0] = {
+      type: 'simple',
+      fields: {
+        'number' => { vals: [15] }
+      }
+    }
+    d.structs[2] = {
+      type: 'simple',
+      fields: {
+        'number' => { vals: [5] }
+      }
+    }
+
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    loop do
+      machine.step!
+      break if machine.halted?
+    end
+
+    #p machine.error&.backtrace
+    expect(machine.error).to be_nil
+    expect(machine.registers[:b]).to eq 5
+  end
+
+  it 'interprets device write' do
+    instructions = YAML.load(<<~YAML)
+      - set: [reg_a, 4]
+      - index: [simple.number, reg_a, 0]
+      - set: [reg_dev, 20]
+    YAML
+
+    d = Binrip::Device.new
+    d.structs[4] = {
+      type: 'simple',
+      fields: {
+        'number' => { vals: [5] }
+      }
+    }
+
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    loop do
+      machine.step!
+      break if machine.halted?
+    end
+
+    #p machine.error&.backtrace
+    expect(machine.error).to be_nil
+    expect(d.structs[4]).to eq({
+      type: 'simple',
+      fields: {
+        'number' => { vals: [20] }
+      }
+    })
   end
 end
