@@ -2,13 +2,14 @@
 
 # Main module
 module Binrip
+  # entrypoint class
   class Ripper
     def initialize(desc)
       @desc = desc
     end
 
     def compiler
-      fmt = YAML.load(@desc)
+      fmt = YAML.safe_load(@desc)
       Binrip::Compiler.new(fmt)
     end
 
@@ -22,7 +23,8 @@ module Binrip
           { 'call' => ["alloc_#{typename}"] },
           { 'call' => ["init_#{typename}"] },
           { 'call' => ["read_#{typename}"] }
-        ]}.merge(compiled))
+        ]
+      }.merge(compiled))
 
       dev = Binrip::Device.new
       dev.bytes = bytes
@@ -38,7 +40,8 @@ module Binrip
       lnk = Binrip::Linker.new({
         'main' => [
           { 'call' => ["write_#{typename}"] }
-        ]}.merge(compiled))
+        ]
+      }.merge(compiled))
 
       dev = Binrip::Device.new
       des = Binrip::Destructurizer.new(@desc, typename, hash)

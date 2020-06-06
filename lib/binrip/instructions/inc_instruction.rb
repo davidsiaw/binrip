@@ -2,6 +2,7 @@
 
 module Binrip
   module Instructions
+    # increment instruction
     class IncInstruction < Instruction
       include RegisterManipulation
 

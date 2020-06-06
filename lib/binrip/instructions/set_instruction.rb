@@ -2,6 +2,7 @@
 
 module Binrip
   module Instructions
+    # set instrcution
     class SetInstruction < Instruction
       include RegisterManipulation
 

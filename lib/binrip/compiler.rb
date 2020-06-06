@@ -22,18 +22,18 @@ module Binrip
           read_func = "read_#{name}_#{field_info['name']}"
           write_func = "write_#{name}_#{field_info['name']}"
 
-          result[read_func] = [            
-            { 'index' => [ "#{name}.#{field_info['name']}", 'reg_a', 0] },
+          result[read_func] = [
+            { 'index' => ["#{name}.#{field_info['name']}", 'reg_a', 0] },
             { 'read_bytes' => ['reg_dev', 1] }
           ]
 
-          result[write_func] = [            
-            { 'index' => [ "#{name}.#{field_info['name']}", 'reg_a', 0] },
+          result[write_func] = [
+            { 'index' => ["#{name}.#{field_info['name']}", 'reg_a', 0] },
             { 'write_bytes' => [1, 'reg_dev'] }
           ]
 
           init_instrs += [
-            { 'index' => [ "#{name}.#{field_info['name']}", 'reg_a', 0] },
+            { 'index' => ["#{name}.#{field_info['name']}", 'reg_a', 0] },
             { 'set' => ['reg_dev', 0] }
           ]
 

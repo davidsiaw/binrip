@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 module Binrip
+  # destructurizer
   class Destructurizer
     def initialize(desc, struct_name, hash)
-      @desc = YAML.load(desc)['formats']
+      @desc = YAML.safe_load(desc)['formats']
       @hash = hash
       @struct_name = struct_name
     end
@@ -16,7 +17,7 @@ module Binrip
       format['fields'].each do |field_info|
         name = field_info['name']
         fields[name] = {
-          vals: [ @hash[name] ]
+          vals: [@hash[name]]
         }
       end
 

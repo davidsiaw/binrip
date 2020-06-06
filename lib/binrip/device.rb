@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Binrip
+  # imaginary device that holds structs and bytes
   class Device
     attr_accessor :bytes, :position, :structs
 
@@ -32,13 +33,8 @@ module Binrip
     def read_struct_value
       validate_index!
 
-      if @structs[@struct_index][:fields][curr_member_name].nil?
-        raise "no such member #{curr_member_name}"
-      end
-
-      if @structs[@struct_index][:fields][curr_member_name][:vals][@member_index].nil?
-        raise 'no such index in member'
-      end
+      raise "no such member #{curr_member_name}" if @structs[@struct_index][:fields][curr_member_name].nil?
+      raise 'no such index in member' if @structs[@struct_index][:fields][curr_member_name][:vals][@member_index].nil?
 
       @structs[@struct_index][:fields][curr_member_name][:vals][@member_index]
     end
@@ -56,7 +52,6 @@ module Binrip
     def validate_index!
       raise 'no such struct' if @structs[@struct_index].nil?
       raise 'wrong type' if curr_struct_type != @structs[@struct_index][:type]
-
     end
 
     def curr_struct_type

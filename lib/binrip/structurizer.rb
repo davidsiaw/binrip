@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 module Binrip
+  # structurizer
   class Structurizer
     def initialize(structs, idx, desc)
       @structs = structs
       @idx = idx
-      @desc = YAML.load(desc)['formats']
+      @desc = YAML.safe_load(desc)['formats']
     end
 
     def structure

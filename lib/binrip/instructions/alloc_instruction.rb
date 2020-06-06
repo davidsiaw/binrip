@@ -2,6 +2,7 @@
 
 module Binrip
   module Instructions
+    # allocate structure instruction
     class AllocInstruction < Instruction
       include RegisterManipulation
 

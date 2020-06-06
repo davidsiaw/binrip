@@ -37,11 +37,9 @@ module Binrip
       idx = register_value(:pc)
       increment(:pc)
       execute!(idx)
-
-    rescue => e
+    rescue StandardError => e
       @error = e
       set_register(:err, 1)
-
     ensure
       @halted = true if register_value(:pc) >= @rom.length
     end
@@ -56,7 +54,7 @@ module Binrip
 
       instr_class = "#{instruction.keys[0].camelize}Instruction"
 
-      cls = Instructions.const_get "#{instr_class}"
+      cls = Instructions.const_get instr_class.to_s
       cls.new(self, params).run!
     end
 

@@ -2,6 +2,7 @@
 
 module Binrip
   module Instructions
+    # call instruction
     class CallInstruction < Instruction
       def run!
         @machine.stack.push @machine.registers[:pc]

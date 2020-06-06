@@ -2,6 +2,7 @@
 
 module Binrip
   module Instructions
+    # module for register manipulation
     module RegisterManipulation
       def dst_value
         register_retrieve dst_register_name
@@ -57,9 +58,7 @@ module Binrip
 
       def register_name(param_idx)
         val = name_of @params[param_idx]
-        unless Interpreter::REGISTER_NAMES.include?(val)
-          raise "invalid register #{val}"
-        end
+        raise "invalid register #{val}" unless Interpreter::REGISTER_NAMES.include?(val)
 
         name_of val
       end

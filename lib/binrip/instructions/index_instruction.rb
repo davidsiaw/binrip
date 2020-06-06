@@ -2,6 +2,7 @@
 
 module Binrip
   module Instructions
+    # set index instruction
     class IndexInstruction < Instruction
       include RegisterManipulation
 
@@ -15,7 +16,8 @@ module Binrip
         @machine.device.index_struct_value(
           @member,
           dst_value,
-          src_value)
+          src_value
+        )
       end
     end
   end

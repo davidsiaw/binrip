@@ -19,14 +19,14 @@ module Binrip
 
     def output
       result = []
-      @asm.each do |fname, fdef|
+      @asm.each do |_fname, fdef|
         fdef.each do |instr|
           params = instr.values[0]
-          if instr.keys[0] == 'call'
-            result << { 'call' => [ positions[params[0]] ] }
-          else
-            result << instr
-          end
+          result << if instr.keys[0] == 'call'
+                      { 'call' => [positions[params[0]]] }
+                    else
+                      instr
+                    end
         end
         result << { 'return' => [] }
       end
