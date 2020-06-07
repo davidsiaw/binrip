@@ -23,6 +23,8 @@ module Binrip
         fdef.each do |instr|
           params = instr.values[0]
           result << if instr.keys[0] == 'call'
+                      raise "Label '#{params[0]}' not found" if positions[params[0]].nil?
+
                       { 'call' => [positions[params[0]]] }
                     else
                       instr

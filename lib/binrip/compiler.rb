@@ -10,6 +10,12 @@ module Binrip
     def functions
       result = {}
       @desc['formats'].each do |name, info|
+        result["alloc_and_read_#{name}"] = [
+          { 'call' => ["alloc_#{name}"] },
+          { 'call' => ["init_#{name}"] },
+          { 'call' => ["read_#{name}"] }
+        ]
+
         result["alloc_#{name}"] = [
           { 'alloc' => ['reg_a', name] }
         ]

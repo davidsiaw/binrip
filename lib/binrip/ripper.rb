@@ -20,9 +20,7 @@ module Binrip
     def read(typename, bytes)
       lnk = Binrip::Linker.new({
         'main' => [
-          { 'call' => ["alloc_#{typename}"] },
-          { 'call' => ["init_#{typename}"] },
-          { 'call' => ["read_#{typename}"] }
+          { 'call' => ["alloc_and_read_#{typename}"] }
         ]
       }.merge(compiled))
 
