@@ -17,14 +17,14 @@ RSpec.describe Binrip do
           - name: number
             type: int8
           - name: another_number
-            type: int8
+            type: int16
     YAML
 
     ripper = Binrip::Ripper.new(format_desc)
 
-    expect(ripper.read('simple', [100, 200])).to eq(
+    expect(ripper.read('simple', [100, 200, 1])).to eq(
       'number' => 100,
-      'another_number' => 200
+      'another_number' => 456
     )
   end
 
@@ -36,14 +36,14 @@ RSpec.describe Binrip do
           - name: number
             type: int8
           - name: another_number
-            type: int8
+            type: int16
     YAML
 
     ripper = Binrip::Ripper.new(format_desc)
 
     expect(ripper.write('simple',
                         'number' => 111,
-                        'another_number' => 222)).to eq [111, 222]
+                        'another_number' => 478)).to eq [111, 222, 1]
   end
 
   it 'test reading a struct' do

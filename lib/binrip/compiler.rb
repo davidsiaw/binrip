@@ -1,10 +1,26 @@
 # frozen_string_literal: true
 
 module Binrip
-  # compiles individual fields
-  class FieldCompiler
+  # base field compiler class
+  class BaseFieldCompiler
     attr_reader :format_name
 
+    def initialize(format_name, field_info)
+      @format_name = format_name
+      @field_info = field_info
+    end
+
+    def read_func_name
+      @read_func_name ||= "read_#{format_name}_#{@field_info['name']}"
+    end
+
+    def write_func_name
+      @write_func_name ||= "write_#{format_name}_#{@field_info['name']}"
+    end
+  end
+
+  # compiles basic typed fields
+  class BasicFieldCompiler < BaseFieldCompiler
     BYTE_LENGTHS = {
       'int8' => 1,
       'int16' => 2,
@@ -16,11 +32,6 @@ module Binrip
       'uint64' => 8
     }.freeze
 
-    def initialize(format_name, field_info)
-      @format_name = format_name
-      @field_info = field_info
-    end
-
     def byte_length
       len = BYTE_LENGTHS[@field_info['type']]
       raise "Unknown type '#{@field_info['type']}'" if len.nil?
@@ -28,19 +39,11 @@ module Binrip
       len
     end
 
-    def read_func_name
-      @read_func_name ||= "read_#{format_name}_#{@field_info['name']}"
-    end
-
     def read_func
       @read_func ||= [
         { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 0] },
         { 'read_bytes' => ['reg_dev', byte_length] }
       ]
-    end
-
-    def write_func_name
-      @write_func_name ||= "write_#{format_name}_#{@field_info['name']}"
     end
 
     def write_func
@@ -51,11 +54,75 @@ module Binrip
     end
 
     def init_instrs
-      @init_instrs ||= begin
-        [
-          { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 0] },
-          { 'set' => ['reg_dev', 0] }
-        ]
+      @init_instrs ||= [
+        { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 0] },
+        { 'set' => ['reg_dev', 0] }
+      ]
+    end
+  end
+
+  # compiles custom fields
+  class CompositeFieldCompiler < BaseFieldCompiler
+    def read_func
+      @read_func ||= [
+        { 'push' => ['reg_a'] }, # save the pointer to the current struct
+        # call the reader of the type
+        { 'call' => ["alloc_and_read_#{@field_info['type']}"] },
+        { 'set' => %w[reg_b reg_a] }, # put the pointer to read data in B
+        { 'pop' => ['reg_a'] }, # load back the current struct to A
+        { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 0] },
+        { 'set' => %w[reg_dev reg_b] } # write the pointer to the field
+      ]
+    end
+
+    def write_func
+      @write_func ||= [
+        { 'push' => ['reg_a'] }, # save the current struct pointer
+        { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 0] },
+        { 'set' => %w[reg_a reg_dev] }, # set the current struct to the inner
+        { 'call' => ["write_#{@field_info['type']}"] }, # write the type
+        { 'pop' => ['reg_a'] } # restore context
+      ]
+    end
+
+    def init_instrs
+      @init_instrs ||= [
+        { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 0] },
+        { 'set' => ['reg_dev', 0] }
+      ]
+    end
+  end
+
+  # compiles fields
+  class FieldCompiler
+    attr_reader :format_name
+
+    def initialize(format_name, field_info)
+      @format_name = format_name
+      @field_info = field_info
+    end
+
+    def delegate_class
+      return BasicFieldCompiler if BasicFieldCompiler::BYTE_LENGTHS.key?(@field_info['type'])
+
+      CompositeFieldCompiler
+    end
+
+    def delegate
+      @delegate ||= delegate_class.new(@format_name, @field_info)
+    end
+
+    INTERFACE = %i[
+      read_func_name
+      read_func
+      write_func_name
+      write_func
+      init_instrs
+    ].freeze
+
+    INTERFACE.each do |fun|
+      define_method fun do
+        delegate.send(fun)
       end
     end
   end
@@ -84,9 +151,7 @@ module Binrip
     end
 
     def init_instrs
-      @init_instrs = field_compilers.flat_map do |fc|
-        fc.init_instrs
-      end
+      @init_instrs = field_compilers.flat_map(&:init_instrs)
     end
 
     def read_funcs

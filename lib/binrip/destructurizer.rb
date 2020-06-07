@@ -9,21 +9,19 @@ module Binrip
       @struct_name = struct_name
     end
 
+    def fields_for(format)
+      format['fields'].map do |field_info|
+        name = field_info['name']
+        [name, { vals: [@hash[name]] }]
+      end.to_h
+    end
+
     def structs(result = [])
       format = @desc[@struct_name]
 
-      fields = {}
-
-      format['fields'].each do |field_info|
-        name = field_info['name']
-        fields[name] = {
-          vals: [@hash[name]]
-        }
-      end
-
       destruct = {
         type: @struct_name,
-        fields: fields
+        fields: fields_for(format)
       }
 
       result << destruct

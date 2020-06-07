@@ -245,4 +245,47 @@ RSpec.describe Binrip::Interpreter do
       }
     })
   end
+
+  it 'does not push with raw value' do
+    instructions = YAML.load(<<~YAML)
+      - push: [5]
+    YAML
+
+    d = Binrip::Device.new
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    machine.run!
+
+    expect(machine.error).to be_a RuntimeError
+  end
+
+  it 'interprets push from register' do
+    instructions = YAML.load(<<~YAML)
+      - push: [reg_c]
+    YAML
+
+    d = Binrip::Device.new
+    machine = Binrip::Interpreter.new(instructions, d)
+    machine.registers[:c] = 15
+
+    machine.run!
+
+    expect(machine.error).to be_nil
+    expect(machine.stack).to eq [15]
+  end
+
+  it 'interprets pop' do
+    instructions = YAML.load(<<~YAML)
+      - pop: [reg_a]
+    YAML
+
+    d = Binrip::Device.new
+    machine = Binrip::Interpreter.new(instructions, d)
+    machine.stack << 10
+
+    machine.run!
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:a]).to eq 10
+  end
 end
