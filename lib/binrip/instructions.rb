@@ -2,6 +2,7 @@
 
 module Binrip
   module Instructions
+    # base class for instructions
     class Instruction
       def initialize(machine, params)
         @machine = machine
