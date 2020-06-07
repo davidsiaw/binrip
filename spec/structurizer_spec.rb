@@ -1,5 +1,5 @@
-RSpec.describe Binrip::Destructurizer do
-  it 'destructures a composite hash' do
+RSpec.describe Binrip::Structurizer do
+  it 'structurizes a composite structlist' do
     format_desc = <<~YAML
       formats:
         stuff:
@@ -14,32 +14,33 @@ RSpec.describe Binrip::Destructurizer do
             type: int8
     YAML
 
-    hash = {
-      'somedata' => {
-        'xnum' => 220
-      },
-      'num' => 111
-    }
-
-    str = Binrip::Destructurizer.new(format_desc, 'stuff', hash)
-    expect(str.structs).to eq([
+    structlist = [
+      nil,
       {
         type: 'stuff',
         fields: {
-          'somedata' => { vals: [1] },
+          'somedata' => { vals: [2] },
           'num' => { vals: [111] }
         }
       },
       {
         type: 'smpl',
         fields: {
-          'xnum' => { vals: [220] }
+          'xnum' => { vals: [110] }
         }
       }
-    ])
+    ]
+
+    str = Binrip::Structurizer.new(structlist, 1, format_desc)
+    expect(str.structure).to eq(
+      'somedata' => {
+        'xnum' => 110
+      },
+      'num' => 111
+    )
   end
 
-  it 'destructures a hash' do
+  it 'structurizes a structlist' do
     format_desc = <<~YAML
       formats:
         smpl:
@@ -50,13 +51,7 @@ RSpec.describe Binrip::Destructurizer do
             type: int8
     YAML
 
-    hash = {
-      'anum' => 110,
-      'bnum' => 220
-    }
-
-    str = Binrip::Destructurizer.new(format_desc, 'smpl', hash)
-    expect(str.structs).to eq([
+    structlist = [
       {
         type: 'smpl',
         fields: {
@@ -64,6 +59,11 @@ RSpec.describe Binrip::Destructurizer do
           'bnum' => { vals: [220] }
         }
       }
-    ])
+    ]
+
+    str = Binrip::Structurizer.new(structlist, 0, format_desc)
+    expect(str.structure).to eq(
+      'anum' => 110,
+      'bnum' => 220)
   end
 end

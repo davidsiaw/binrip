@@ -3,11 +3,60 @@ RSpec.describe Binrip do
     expect(Binrip::VERSION).not_to be nil
   end
 
-  # struct Something {
-  #   int number;
-  #   int count;
-  #   int some_numbers[count];
-  # }
+  it 'reads a composite struct' do
+    format_desc = <<~YAML
+      formats:
+        composite:
+          fields:
+          - name: num
+            type: int8
+          - name: data
+            type: simple
+        simple:
+          fields:
+          - name: number
+            type: int8
+          - name: another_number
+            type: int16
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.read('composite', [5, 100, 200, 1])).to eq(
+      'num' => 5,
+      'data' => {
+        'number' => 100,
+        'another_number' => 456
+      }
+    )
+  end
+
+  it 'writes a composite struct' do
+    format_desc = <<~YAML
+      formats:
+        composite:
+          fields:
+          - name: num
+            type: int8
+          - name: data
+            type: simple
+        simple:
+          fields:
+          - name: number
+            type: int8
+          - name: another_number
+            type: int16
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.write('composite',
+                        'num' => 7,
+                        'data' => {
+                          'number' => 111,
+                          'another_number' => 478
+                        })).to eq [7, 111, 222, 1]
+  end
 
   it 'reads a struct' do
     format_desc = <<~YAML
