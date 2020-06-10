@@ -3,6 +3,40 @@ RSpec.describe Binrip do
     expect(Binrip::VERSION).not_to be nil
   end
 
+  it 'reads a struct with array' do
+    format_desc = <<~YAML
+      formats:
+        somenums:
+          fields:
+          - name: nums
+            type: int8
+            size: 4
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.read('somenums', [2, 4, 6, 8])).to eq(
+      'nums' => [2, 4, 6, 8]
+    )
+  end
+
+  it 'writes a struct with array' do
+    format_desc = <<~YAML
+      formats:
+        somenums:
+          fields:
+          - name: nums
+            type: int8
+            size: 3
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.write('somenums', {'nums' => [2, 3, 4]})).to eq(
+      [2, 3, 4]
+    )
+  end
+
   it 'reads a composite struct' do
     format_desc = <<~YAML
       formats:

@@ -1,4 +1,70 @@
 RSpec.describe Binrip::Compiler do
+
+  it 'compiles a description to read and write an array' do
+
+    yaml = <<~YAML
+      formats:
+        simple:
+          fields:
+          - name: numbers
+            type: int8
+            size: 4
+    YAML
+    compiler = Binrip::Compiler.new(YAML.load(yaml))
+    expect(compiler.output.to_yaml).to eq YAML.load(<<~YAML).to_yaml
+      functions:
+        alloc_and_read_simple:
+        - call: [alloc_simple]
+        - call: [init_simple]
+        - call: [read_simple]
+
+        alloc_simple:
+        - alloc: [reg_a, simple]
+
+        read_simple_numbers:
+        - set: [reg_e, 0]
+        - set: [reg_d, reg_pc]
+        - set: [reg_c, -4]
+        - inc: [reg_c, reg_e]
+        - jnz: [finish, reg_c]
+        - index: [simple.numbers, reg_a, reg_e]
+        - read_bytes: [reg_dev, 1]
+        - inc: [reg_e, 1]
+        - jnz: [reg_d, 1]
+        - label: [finish]
+
+        write_simple_numbers:
+        - set: [reg_e, 0]
+        - set: [reg_d, reg_pc]
+        - set: [reg_c, -4]
+        - inc: [reg_c, reg_e]
+        - jnz: [finish, reg_c]
+        - index: [simple.numbers, reg_a, reg_e]
+        - write_bytes: [1, reg_dev]
+        - inc: [reg_e, 1]
+        - jnz: [reg_d, 1]
+        - label: [finish]
+
+        init_simple:
+        - set: [reg_e, 0]
+        - set: [reg_d, reg_pc]
+        - set: [reg_c, -4]
+        - inc: [reg_c, reg_e]
+        - jnz: [finish, reg_c]
+        - index: [simple.numbers, reg_a, reg_e]
+        - set: [reg_dev, 0]
+        - inc: [reg_e, 1]
+        - jnz: [reg_d, 1]
+        - label: [finish]
+
+        read_simple:
+        - call: [read_simple_numbers]
+
+        write_simple:
+        - call: [write_simple_numbers]
+    YAML
+  end
+
   it 'compiles a description to read and write composite format' do
 
     yaml = <<~YAML

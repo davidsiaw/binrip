@@ -39,6 +39,31 @@ RSpec.describe Binrip::Destructurizer do
     ])
   end
 
+  it 'destructures a hash with an array' do
+    format_desc = <<~YAML
+      formats:
+        smpl:
+          fields:
+          - name: nums
+            type: int8
+            size: 5
+    YAML
+
+    hash = {
+      'nums' => [1, 2, 3, 4, 5]
+    }
+
+    str = Binrip::Destructurizer.new(format_desc, 'smpl', hash)
+    expect(str.structs).to eq([
+      {
+        type: 'smpl',
+        fields: {
+          'nums' => { vals: [1, 2, 3, 4, 5] }
+        }
+      }
+    ])
+  end
+
   it 'destructures a hash' do
     format_desc = <<~YAML
       formats:

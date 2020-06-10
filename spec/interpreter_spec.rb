@@ -288,4 +288,57 @@ RSpec.describe Binrip::Interpreter do
     expect(machine.error).to be_nil
     expect(machine.registers[:a]).to eq 10
   end
+
+  it 'interprets jnz and jumps if not zero' do
+    instructions = YAML.load(<<~YAML)
+      - jnz: [2, 1]
+      - set: [reg_a, 1]
+      - set: [reg_a, 2]
+    YAML
+
+    d = Binrip::Device.new
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    machine.step!
+    machine.step!
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:a]).to eq 2
+  end
+
+  it 'interprets jnz and does not jump if zero' do
+    instructions = YAML.load(<<~YAML)
+      - jnz: [2, 0]
+      - set: [reg_a, 1]
+      - set: [reg_a, 2]
+    YAML
+
+    d = Binrip::Device.new
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    machine.step!
+    machine.step!
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:a]).to eq 1
+  end
+
+  it 'interprets jnz and jumps to register stored value' do
+    instructions = YAML.load(<<~YAML)
+      - set: [reg_b, 3]
+      - jnz: [reg_b, 1]
+      - set: [reg_a, 1]
+      - set: [reg_a, 2]
+    YAML
+
+    d = Binrip::Device.new
+    machine = Binrip::Interpreter.new(instructions, d)
+
+    machine.step!
+    machine.step!
+    machine.step!
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:a]).to eq 2
+  end
 end

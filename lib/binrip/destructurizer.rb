@@ -14,14 +14,29 @@ module Binrip
       format['fields'].map do |field_info|
         name = field_info['name']
         type = field_info['type']
-        value = @hash[name]
-        if @desc.key? type
-          destr = Destructurizer.new(@rawdesc, type, @hash[name])
-          value = result.count
-          destr.structs(result)
+
+        values = []
+        if field_info.key?('size')
+          @hash[name].each do |elem|
+            value = elem
+            if @desc.key? type
+              destr = Destructurizer.new(@rawdesc, type, elem)
+              value = result.count
+              destr.structs(result)
+            end
+            values << value
+          end
+        else
+          value = @hash[name]
+          if @desc.key? type
+            destr = Destructurizer.new(@rawdesc, type, @hash[name])
+            value = result.count
+            destr.structs(result)
+          end
+          values << value
         end
 
-        [name, { vals: [value] }]
+        [name, { vals: values }]
       end.to_h
     end
 
