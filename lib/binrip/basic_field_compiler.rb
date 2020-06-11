@@ -25,21 +25,21 @@ module Binrip
 
     def read_func
       @read_func ||= [
-        { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 0] },
+        { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 'reg_e'] },
         { 'read_bytes' => ['reg_dev', byte_length] }
       ]
     end
 
     def write_func
       @write_func ||= [
-        { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 0] },
+        { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 'reg_e'] },
         { 'write_bytes' => [byte_length, 'reg_dev'] }
       ]
     end
 
     def init_instrs
       @init_instrs ||= [
-        { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 0] },
+        { 'index' => ["#{format_name}.#{@field_info['name']}", 'reg_a', 'reg_e'] },
         { 'set' => ['reg_dev', 0] }
       ]
     end

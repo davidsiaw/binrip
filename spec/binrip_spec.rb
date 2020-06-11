@@ -3,6 +3,57 @@ RSpec.describe Binrip do
     expect(Binrip::VERSION).not_to be nil
   end
 
+  it 'reads an array of composites' do
+    format_desc = <<~YAML
+      formats:
+        aoc:
+          fields:
+          - name: data
+            type: datum
+            size: 4
+        datum:
+          fields:
+          - name: num
+            type: int16
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.read('aoc', [3, 0, 6, 0, 9, 0, 12, 0])).to eq(
+      'data' => [
+        { 'num' => 3 },
+        { 'num' => 6 },
+        { 'num' => 9 },
+        { 'num' => 12 }
+      ]
+    )
+  end
+
+  it 'writes an array of composites' do
+    format_desc = <<~YAML
+      formats:
+        aoc:
+          fields:
+          - name: data
+            type: datum
+            size: 4
+        datum:
+          fields:
+          - name: num
+            type: int16
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.write('aoc', {'data' => [
+      { 'num' => 5 },
+      { 'num' => 10 },
+      { 'num' => 15 },
+    ]})).to eq(
+      [5, 0, 10, 0, 15, 0]
+    )
+  end
+
   it 'reads a struct with array' do
     format_desc = <<~YAML
       formats:

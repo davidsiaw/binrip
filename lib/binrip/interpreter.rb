@@ -27,6 +27,8 @@ module Binrip
     def run!
       loop do
         step!
+        # p @rom[registers[:pc]]
+        # puts registers
         break if halted?
       end
     end

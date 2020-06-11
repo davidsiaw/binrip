@@ -26,7 +26,9 @@ RSpec.describe Binrip::Compiler do
         - set: [reg_d, reg_pc]
         - set: [reg_c, -4]
         - inc: [reg_c, reg_e]
-        - jnz: [finish, reg_c]
+        - jnz: [continue, reg_c]
+        - jnz: [finish, 1]
+        - label: [continue]
         - index: [simple.numbers, reg_a, reg_e]
         - read_bytes: [reg_dev, 1]
         - inc: [reg_e, 1]
@@ -38,7 +40,9 @@ RSpec.describe Binrip::Compiler do
         - set: [reg_d, reg_pc]
         - set: [reg_c, -4]
         - inc: [reg_c, reg_e]
-        - jnz: [finish, reg_c]
+        - jnz: [continue, reg_c]
+        - jnz: [finish, 1]
+        - label: [continue]
         - index: [simple.numbers, reg_a, reg_e]
         - write_bytes: [1, reg_dev]
         - inc: [reg_e, 1]
@@ -50,7 +54,9 @@ RSpec.describe Binrip::Compiler do
         - set: [reg_d, reg_pc]
         - set: [reg_c, -4]
         - inc: [reg_c, reg_e]
-        - jnz: [finish, reg_c]
+        - jnz: [continue, reg_c]
+        - jnz: [finish, 1]
+        - label: [continue]
         - index: [simple.numbers, reg_a, reg_e]
         - set: [reg_dev, 0]
         - inc: [reg_e, 1]
@@ -92,32 +98,50 @@ RSpec.describe Binrip::Compiler do
         - alloc: [reg_a, composite]
 
         read_composite_data:
+        - set: [reg_e, 0]
         - push: [reg_a]
+        - push: [reg_c]
+        - push: [reg_d]
+        - push: [reg_e]
         - call: [alloc_and_read_simple]
         - set: [reg_b, reg_a]
+        - pop: [reg_e]
+        - pop: [reg_d]
+        - pop: [reg_c]
         - pop: [reg_a]
-        - index: [composite.data, reg_a, 0]
+        - index: [composite.data, reg_a, reg_e]
         - set: [reg_dev, reg_b]
 
         read_composite_num:
-        - index: [composite.num, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [composite.num, reg_a, reg_e]
         - read_bytes: [reg_dev, 1]
 
         write_composite_data:
+        - set: [reg_e, 0]
         - push: [reg_a]
-        - index: [composite.data, reg_a, 0]
+        - push: [reg_c]
+        - push: [reg_d]
+        - push: [reg_e]
+        - index: [composite.data, reg_a, reg_e]
         - set: [reg_a, reg_dev]
         - call: [write_simple]
+        - pop: [reg_e]
+        - pop: [reg_d]
+        - pop: [reg_c]
         - pop: [reg_a]
 
         write_composite_num:
-        - index: [composite.num, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [composite.num, reg_a, reg_e]
         - write_bytes: [1, reg_dev]
 
         init_composite:
-        - index: [composite.data, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [composite.data, reg_a, reg_e]
         - set: [reg_dev, 0]
-        - index: [composite.num, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [composite.num, reg_a, reg_e]
         - set: [reg_dev, 0]
 
         read_composite:
@@ -137,15 +161,18 @@ RSpec.describe Binrip::Compiler do
         - alloc: [reg_a, simple]
 
         read_simple_number:
-        - index: [simple.number, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [simple.number, reg_a, reg_e]
         - read_bytes: [reg_dev, 2]
 
         write_simple_number:
-        - index: [simple.number, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [simple.number, reg_a, reg_e]
         - write_bytes: [2, reg_dev]
 
         init_simple:
-        - index: [simple.number, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [simple.number, reg_a, reg_e]
         - set: [reg_dev, 0]
 
         read_simple:
@@ -177,15 +204,18 @@ RSpec.describe Binrip::Compiler do
         - alloc: [reg_a, simple]
 
         read_simple_number:
-        - index: [simple.number, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [simple.number, reg_a, reg_e]
         - read_bytes: [reg_dev, 2]
 
         write_simple_number:
-        - index: [simple.number, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [simple.number, reg_a, reg_e]
         - write_bytes: [2, reg_dev]
 
         init_simple:
-        - index: [simple.number, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [simple.number, reg_a, reg_e]
         - set: [reg_dev, 0]
 
         read_simple:
@@ -217,15 +247,18 @@ RSpec.describe Binrip::Compiler do
         - alloc: [reg_a, simple]
 
         read_simple_number:
-        - index: [simple.number, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [simple.number, reg_a, reg_e]
         - read_bytes: [reg_dev, 1]
 
         write_simple_number:
-        - index: [simple.number, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [simple.number, reg_a, reg_e]
         - write_bytes: [1, reg_dev]
 
         init_simple:
-        - index: [simple.number, reg_a, 0]
+        - set: [reg_e, 0]
+        - index: [simple.number, reg_a, reg_e]
         - set: [reg_dev, 0]
 
         read_simple:

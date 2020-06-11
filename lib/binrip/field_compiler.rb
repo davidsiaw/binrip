@@ -54,14 +54,16 @@ module Binrip
     end
 
     def loop_header
-      return [] if array_size == 1
+      return [{ 'set' => ['reg_e', 0] }] if array_size == 1
 
       [
         { 'set' => ['reg_e', 0] },
         { 'set' => ['reg_d', 'reg_pc'] },
         { 'set' => ['reg_c', -array_size] },
         { 'inc' => ['reg_c', 'reg_e'] },
-        { 'jnz' => ['finish', 'reg_c'] }
+        { 'jnz' => ['continue', 'reg_c'] },
+        { 'jnz' => ['finish', 1] },
+        { 'label' => ['continue'] }
       ]
     end
 
