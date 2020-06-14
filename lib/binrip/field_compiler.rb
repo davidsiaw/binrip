@@ -53,14 +53,23 @@ module Binrip
       @field_info['size'] ||= 1
     end
 
+    def array_size_instructions(array_size)
+      return ['set' => ['reg_c', array_size]] if array_size.is_a? Integer
+
+      [
+        { 'index' => ["#{@format_name}.#{array_size}", 'reg_a', 0] },
+        { 'set' => ['reg_c', 'reg_dev'] }
+      ]
+    end
+
     def loop_header
       return [{ 'set' => ['reg_e', 0] }] if array_size == 1
 
       [
         { 'set' => ['reg_e', 0] },
         { 'set' => ['reg_d', 'reg_pc'] },
-        { 'set' => ['reg_c', -array_size] },
-        { 'inc' => ['reg_c', 'reg_e'] },
+        *array_size_instructions(array_size),
+        { 'dec' => ['reg_c', 'reg_e'] },
         { 'jnz' => ['continue', 'reg_c'] },
         { 'jnz' => ['finish', 1] },
         { 'label' => ['continue'] }

@@ -1,5 +1,96 @@
 RSpec.describe Binrip::Compiler do
 
+  it 'compiles a description to read and write an array with varsize' do
+
+    yaml = <<~YAML
+      formats:
+        somedata:
+          fields:
+          - name: length
+            type: int8
+          - name: numbers
+            type: int8
+            size: length
+    YAML
+    compiler = Binrip::Compiler.new(YAML.load(yaml))
+    expect(compiler.output.to_yaml).to eq YAML.load(<<~YAML).to_yaml
+      functions:
+        alloc_and_read_somedata:
+        - call: [alloc_somedata]
+        - call: [init_somedata]
+        - call: [read_somedata]
+
+        alloc_somedata:
+        - alloc: [reg_a, somedata]
+
+        read_somedata_length:
+        - set: [reg_e, 0]
+        - index: [somedata.length, reg_a, reg_e]
+        - read_bytes: [reg_dev, 1]
+
+        read_somedata_numbers:
+        - set: [reg_e, 0]
+        - set: [reg_d, reg_pc]
+        - index: [somedata.length, reg_a, 0]
+        - set: [reg_c, reg_dev]
+        - dec: [reg_c, reg_e]
+        - jnz: [continue, reg_c]
+        - jnz: [finish, 1]
+        - label: [continue]
+        - index: [somedata.numbers, reg_a, reg_e]
+        - read_bytes: [reg_dev, 1]
+        - inc: [reg_e, 1]
+        - jnz: [reg_d, 1]
+        - label: [finish]
+
+        write_somedata_length:
+        - set: [reg_e, 0]
+        - index: [somedata.length, reg_a, reg_e]
+        - write_bytes: [1, reg_dev]
+
+        write_somedata_numbers:
+        - set: [reg_e, 0]
+        - set: [reg_d, reg_pc]
+        - index: [somedata.length, reg_a, 0]
+        - set: [reg_c, reg_dev]
+        - dec: [reg_c, reg_e]
+        - jnz: [continue, reg_c]
+        - jnz: [finish, 1]
+        - label: [continue]
+        - index: [somedata.numbers, reg_a, reg_e]
+        - write_bytes: [1, reg_dev]
+        - inc: [reg_e, 1]
+        - jnz: [reg_d, 1]
+        - label: [finish]
+
+        init_somedata:
+        - set: [reg_e, 0]
+        - index: [somedata.length, reg_a, reg_e]
+        - set: [reg_dev, 0]
+        - set: [reg_e, 0]
+        - set: [reg_d, reg_pc]
+        - index: [somedata.length, reg_a, 0]
+        - set: [reg_c, reg_dev]
+        - dec: [reg_c, reg_e]
+        - jnz: [continue, reg_c]
+        - jnz: [finish, 1]
+        - label: [continue]
+        - index: [somedata.numbers, reg_a, reg_e]
+        - set: [reg_dev, 0]
+        - inc: [reg_e, 1]
+        - jnz: [reg_d, 1]
+        - label: [finish]
+
+        read_somedata:
+        - call: [read_somedata_length]
+        - call: [read_somedata_numbers]
+
+        write_somedata:
+        - call: [write_somedata_length]
+        - call: [write_somedata_numbers]
+    YAML
+  end
+
   it 'compiles a description to read and write an array' do
 
     yaml = <<~YAML
@@ -24,8 +115,8 @@ RSpec.describe Binrip::Compiler do
         read_simple_numbers:
         - set: [reg_e, 0]
         - set: [reg_d, reg_pc]
-        - set: [reg_c, -4]
-        - inc: [reg_c, reg_e]
+        - set: [reg_c, 4]
+        - dec: [reg_c, reg_e]
         - jnz: [continue, reg_c]
         - jnz: [finish, 1]
         - label: [continue]
@@ -38,8 +129,8 @@ RSpec.describe Binrip::Compiler do
         write_simple_numbers:
         - set: [reg_e, 0]
         - set: [reg_d, reg_pc]
-        - set: [reg_c, -4]
-        - inc: [reg_c, reg_e]
+        - set: [reg_c, 4]
+        - dec: [reg_c, reg_e]
         - jnz: [continue, reg_c]
         - jnz: [finish, 1]
         - label: [continue]
@@ -52,8 +143,8 @@ RSpec.describe Binrip::Compiler do
         init_simple:
         - set: [reg_e, 0]
         - set: [reg_d, reg_pc]
-        - set: [reg_c, -4]
-        - inc: [reg_c, reg_e]
+        - set: [reg_c, 4]
+        - dec: [reg_c, reg_e]
         - jnz: [continue, reg_c]
         - jnz: [finish, 1]
         - label: [continue]

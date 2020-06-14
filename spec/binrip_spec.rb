@@ -3,6 +3,48 @@ RSpec.describe Binrip do
     expect(Binrip::VERSION).not_to be nil
   end
 
+  it 'reads an array with variable size' do
+    format_desc = <<~YAML
+      formats:
+        aoc:
+          fields:
+          - name: count
+            type: int8
+          - name: nums
+            type: int8
+            size: count
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.read('aoc', [3, 5, 6, 7, 8, 9])).to eq(
+      'count' => 3,
+      'nums' => [5, 6, 7]
+    )
+  end
+
+  it 'writes an array with variable size' do
+    format_desc = <<~YAML
+      formats:
+        aoc:
+          fields:
+          - name: count
+            type: int8
+          - name: nums
+            type: int8
+            size: count
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.write('aoc', {
+      'count' => 4,
+      'nums' => [1, 2, 3, 4]
+    })).to eq(
+      [4, 1, 2, 3, 4]
+    )
+  end
+
   it 'reads an array of composites' do
     format_desc = <<~YAML
       formats:

@@ -341,4 +341,64 @@ RSpec.describe Binrip::Interpreter do
     expect(machine.error).to be_nil
     expect(machine.registers[:a]).to eq 2
   end
+
+  it 'interprets inc' do
+    instructions = YAML.load(<<~YAML)
+      - inc: [reg_a, 5]
+    YAML
+
+    d = Binrip::Device.new
+    machine = Binrip::Interpreter.new(instructions, d)
+    machine.registers[:a] = 6
+
+    machine.step!
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:a]).to eq 11
+  end
+
+  it 'interprets inc for negative numbers' do
+    instructions = YAML.load(<<~YAML)
+      - inc: [reg_a, 5]
+    YAML
+
+    d = Binrip::Device.new
+    machine = Binrip::Interpreter.new(instructions, d)
+    machine.registers[:a] = -3
+
+    machine.step!
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:a]).to eq 2
+  end
+
+  it 'interprets dec' do
+    instructions = YAML.load(<<~YAML)
+      - dec: [reg_a, 13]
+    YAML
+
+    d = Binrip::Device.new
+    machine = Binrip::Interpreter.new(instructions, d)
+    machine.registers[:a] = 6
+
+    machine.step!
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:a]).to eq -7
+  end
+
+  it 'interprets dec for negative numbers' do
+    instructions = YAML.load(<<~YAML)
+      - dec: [reg_a, -2]
+    YAML
+
+    d = Binrip::Device.new
+    machine = Binrip::Interpreter.new(instructions, d)
+    machine.registers[:a] = -3
+
+    machine.step!
+
+    expect(machine.error).to be_nil
+    expect(machine.registers[:a]).to eq -1
+  end
 end
