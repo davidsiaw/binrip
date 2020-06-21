@@ -3,6 +3,68 @@ RSpec.describe Binrip do
     expect(Binrip::VERSION).not_to be nil
   end
 
+  it 'reads a field based on another field' do
+    format_desc = <<~YAML
+      formats:
+        someobject:
+          fields:
+            - name: data
+              type: int8
+            - name: copieddata
+              type: int8
+              read: data
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.read('someobject', [4])).to eq(
+      'data' => 4,
+      'copieddata' => 4
+    )
+  end
+
+  it 'reads a field based on a def' do
+    format_desc = <<~YAML
+      formats:
+        someobject:
+          fields:
+            - name: data
+              type: int8
+              read: three
+          defs:
+            - name: three
+            - expr: 3
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.read('someobject', [])).to eq(
+      'data' => 3
+    )
+  end
+
+  it 'writes a field based on a def' do
+    format_desc = <<~YAML
+      formats:
+        someobject:
+          fields:
+            - name: data
+              type: int8
+              write: two
+          defs:
+            - name: two
+            - expr: 2
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.write('someobject', {
+      'data' => 100
+    })).to eq(
+      [2]
+    )
+  end
+
   it 'reads an array with variable size' do
     format_desc = <<~YAML
       formats:

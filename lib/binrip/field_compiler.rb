@@ -1,43 +1,8 @@
 # frozen_string_literal: true
 
-require 'binrip/basic_field_compiler'
-require 'binrip/composite_field_compiler'
+require 'binrip/simple_field_compiler'
 
 module Binrip
-  # compiles fields
-  class SimpleFieldCompiler
-    attr_reader :format_name
-
-    def initialize(format_name, field_info)
-      @format_name = format_name
-      @field_info = field_info
-    end
-
-    def delegate_class
-      return BasicFieldCompiler if BasicFieldCompiler::BYTE_LENGTHS.key?(@field_info['type'])
-
-      CompositeFieldCompiler
-    end
-
-    def delegate
-      @delegate ||= delegate_class.new(@format_name, @field_info)
-    end
-
-    INTERFACE = %i[
-      read_func_name
-      read_func
-      write_func_name
-      write_func
-      init_instrs
-    ].freeze
-
-    INTERFACE.each do |fun|
-      define_method fun do
-        delegate.send(fun)
-      end
-    end
-  end
-
   # compiles fields (Every field is just an array)
   class FieldCompiler
     def initialize(format_name, field_info)
@@ -53,13 +18,17 @@ module Binrip
       @field_info['size'] ||= 1
     end
 
+    def load_referenced_number(symbol, register_name:)
+      [
+        { 'index' => ["#{@format_name}.#{symbol}", 'reg_a', 0] },
+        { 'set' => [register_name, 'reg_dev'] }
+      ]
+    end
+
     def array_size_instructions(array_size)
       return ['set' => ['reg_c', array_size]] if array_size.is_a? Integer
 
-      [
-        { 'index' => ["#{@format_name}.#{array_size}", 'reg_a', 0] },
-        { 'set' => ['reg_c', 'reg_dev'] }
-      ]
+      load_referenced_number(array_size, register_name: 'reg_c')
     end
 
     def loop_header
