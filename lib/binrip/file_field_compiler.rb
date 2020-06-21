@@ -4,8 +4,8 @@ require 'binrip/basic_field_compiler'
 require 'binrip/composite_field_compiler'
 
 module Binrip
-  # compiles fields
-  class SimpleFieldCompiler
+  # compiles fields that read and write directly to a file
+  class FileFieldCompiler
     attr_reader :format_name
 
     def initialize(format_name, field_info)

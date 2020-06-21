@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'binrip/simple_field_compiler'
+require 'binrip/file_field_compiler'
 
 module Binrip
   # compiles fields (Every field is just an array)
@@ -11,7 +11,7 @@ module Binrip
     end
 
     def inner_compiler
-      @inner_compiler = SimpleFieldCompiler.new(@format_name, @field_info)
+      @inner_compiler = FileFieldCompiler.new(@format_name, @field_info)
     end
 
     def array_size
