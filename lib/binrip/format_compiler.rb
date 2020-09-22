@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'binrip/array_compiler'
+
 module Binrip
   # compiles a format entry
   class FormatCompiler
@@ -20,7 +22,7 @@ module Binrip
 
     def field_compilers
       @field_compilers ||= @format_info['fields'].map do |field_info|
-        FieldCompiler.new(format_name, field_info)
+        ArrayCompiler.new(format_name, field_info)
       end
     end
 

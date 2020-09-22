@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'binrip/field_compiler'
 require 'binrip/format_compiler'
 
 module Binrip
