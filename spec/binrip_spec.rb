@@ -23,6 +23,28 @@ RSpec.describe Binrip do
     )
   end
 
+  it 'writes a field based on another field' do
+    format_desc = <<~YAML
+      formats:
+        someobject:
+          fields:
+            - name: data
+              type: int8
+            - name: four
+              type: int8
+              write: data
+    YAML
+
+    ripper = Binrip::Ripper.new(format_desc)
+
+    expect(ripper.write('someobject', {
+      'data' => 22,
+      'four'  => 4
+    })).to eq(
+      [22, 22]
+    )
+  end
+
   it 'reads a field based on a def' do
     format_desc = <<~YAML
       formats:
@@ -33,7 +55,8 @@ RSpec.describe Binrip do
               read: three
           defs:
             - name: three
-            - expr: 3
+              type: int8
+              expr: 3
     YAML
 
     ripper = Binrip::Ripper.new(format_desc)
@@ -53,7 +76,8 @@ RSpec.describe Binrip do
               write: two
           defs:
             - name: two
-            - expr: 2
+              type: int8
+              expr: 2
     YAML
 
     ripper = Binrip::Ripper.new(format_desc)

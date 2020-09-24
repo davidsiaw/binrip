@@ -1,25 +1,23 @@
 # frozen_string_literal: true
 
-require 'binrip/inner_compiler'
+require 'binrip/branching_compiler'
 
 module Binrip
-  # compiles fields (Every field is just an array)
+  # compiles field readers and writers (Every field is just an array)
   class ArrayCompiler
     def initialize(format_name, field_info)
       @format_name = format_name
       @field_info = field_info
     end
 
+    def delegate_class
+      return BasicFieldCompiler if BasicFieldCompiler::BYTE_LENGTHS.key?(@field_info['type'])
+
+      CompositeFieldCompiler
+    end
+
     def inner_compiler
-      @inner_compiler = InnerCompiler.new(@format_name, @field_info)
-    end
-
-    def read_compiler
-      @read_compiler = inner_compiler
-    end
-
-    def write_compiler
-      @write_compiler = inner_compiler
+      @inner_compiler ||= BranchingCompiler.new(delegate_class, @format_name, @field_info)
     end
 
     def array_size
@@ -64,17 +62,17 @@ module Binrip
     end
 
     def read_func_name
-      read_compiler.read_func_name
+      inner_compiler.read_func_name
     end
 
     def write_func_name
-      write_compiler.write_func_name
+      inner_compiler.write_func_name
     end
 
     def read_func
       @read_func ||= [
         *loop_header,
-        *read_compiler.read_func,
+        *inner_compiler.read_func,
         *loop_footer
       ]
     end
@@ -82,7 +80,7 @@ module Binrip
     def write_func
       @write_func ||= [
         *loop_header,
-        *write_compiler.write_func,
+        *inner_compiler.write_func,
         *loop_footer
       ]
     end
